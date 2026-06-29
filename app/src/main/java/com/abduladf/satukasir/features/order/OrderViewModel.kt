@@ -1,141 +1,162 @@
 package com.abduladf.satukasir.features.order
 
 import android.content.Context
+import android.widget.Toast
+import androidx.compose.material3.Snackbar
 import androidx.lifecycle.ViewModel
+import androidx.lifecycle.viewModelScope
+import com.abduladf.satukasir.data.repository.OrderRepository
 import com.abduladf.satukasir.domain.model.Category
 import com.abduladf.satukasir.domain.model.OrderItem
 import com.abduladf.satukasir.domain.model.Product
+import com.abduladf.satukasir.utils.ThermalPrinterHelper
+import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.update
+import kotlinx.coroutines.launch
+import kotlinx.coroutines.withContext
+import java.text.NumberFormat
+import java.text.SimpleDateFormat
+import java.util.Date
+import java.util.Locale
 
-class OrderViewModel : ViewModel() {
+class OrderViewModel(private val repository: OrderRepository) : ViewModel() {
 
     private val _uiState = MutableStateFlow(OrderUiState())
     val uiState = _uiState.asStateFlow()
 
     init {
-        loadDummyData()
+        observeDatabase()
     }
 
-    private fun loadDummyData() {
-        val catMakanan = Category("c1", "Makanan")
-        val catMinuman = Category("c2", "Minuman")
-        val catCemilan = Category("c3", "Cemilan")
-        val catDessert = Category("c4", "Dessert")
-
-        val dummyProducts = listOf(
-            Product("p1", "Soto Betawi Daging", 35000, "c1"),
-            Product("p2", "Soto Betawi Campur", 35000, "c1"),
-            Product("p3", "Nasi Putih", 5000, "c1"),
-            Product("p4", "Es Teh Manis", 5000, "c2"),
-            Product("p5", "Es Jeruk Peras", 7000, "c2"),
-            Product("p6", "Ayam Goreng", 25000, "c1"),
-            Product("p7", "Ayam Bakar", 27000, "c1"),
-            Product("p8", "Bebek Goreng", 38000, "c1"),
-            Product("p9", "Bebek Bakar", 40000, "c1"),
-            Product("p10", "Lele Goreng", 18000, "c1"),
-            Product("p11", "Lele Bakar", 20000, "c1"),
-            Product("p12", "Nasi Goreng Spesial", 28000, "c1"),
-            Product("p13", "Nasi Goreng Seafood", 32000, "c1"),
-            Product("p14", "Nasi Goreng Kampung", 25000, "c1"),
-            Product("p15", "Mie Goreng Jawa", 24000, "c1"),
-            Product("p16", "Mie Kuah Ayam", 23000, "c1"),
-            Product("p17", "Bakso Urat", 22000, "c1"),
-            Product("p18", "Bakso Beranak", 35000, "c1"),
-            Product("p19", "Soto Ayam", 22000, "c1"),
-            Product("p20", "Soto Lamongan", 24000, "c1"),
-            Product("p21", "Rawon", 32000, "c1"),
-            Product("p22", "Gudeg Jogja", 30000, "c1"),
-            Product("p23", "Rendang", 38000, "c1"),
-            Product("p24", "Ayam Geprek", 23000, "c1"),
-            Product("p25", "Ayam Penyet", 25000, "c1"),
-            Product("p26", "Ikan Gurame Bakar", 55000, "c1"),
-            Product("p27", "Ikan Gurame Goreng", 52000, "c1"),
-            Product("p28", "Cumi Goreng Tepung", 35000, "c1"),
-            Product("p29", "Udang Saus Padang", 42000, "c1"),
-            Product("p30", "Capcay", 28000, "c1"),
-            Product("p31", "Kangkung Cah", 18000, "c1"),
-            Product("p32", "Tumis Tauge", 15000, "c1"),
-            Product("p33", "Sayur Asem", 12000, "c1"),
-            Product("p34", "Sop Buntut", 55000, "c1"),
-            Product("p35", "Sop Iga", 50000, "c1"),
-            Product("p36", "Sate Ayam", 30000, "c1"),
-            Product("p37", "Sate Kambing", 42000, "c1"),
-            Product("p38", "Tongseng Kambing", 45000, "c1"),
-            Product("p39", "Gado-Gado", 22000, "c1"),
-            Product("p40", "Ketoprak", 18000, "c1"),
-            Product("p41", "Pempek Kapal Selam", 32000, "c1"),
-            Product("p42", "Pempek Lenjer", 26000, "c1"),
-            Product("p43", "Lontong Sayur", 18000, "c1"),
-            Product("p44", "Lontong Opor", 28000, "c1"),
-            Product("p45", "Bubur Ayam", 18000, "c1"),
-            Product("p46", "Nasi Uduk", 20000, "c1"),
-            Product("p47", "Nasi Kuning", 22000, "c1"),
-            Product("p48", "Mie Ayam Bakso", 25000, "c1"),
-            Product("p49", "Mie Ayam Ceker", 26000, "c1"),
-            Product("p50", "Mie Ayam Jamur", 27000, "c1"),
-
-            Product("p51", "Es Teh Tawar", 3000, "c2"),
-            Product("p52", "Teh Hangat", 4000, "c2"),
-            Product("p53", "Es Lemon Tea", 9000, "c2"),
-            Product("p54", "Jus Alpukat", 18000, "c2"),
-            Product("p55", "Jus Mangga", 17000, "c2"),
-            Product("p56", "Jus Melon", 15000, "c2"),
-            Product("p57", "Jus Semangka", 15000, "c2"),
-            Product("p58", "Jus Jambu", 16000, "c2"),
-            Product("p59", "Jus Apel", 17000, "c2"),
-            Product("p60", "Jus Wortel", 15000, "c2"),
-            Product("p61", "Es Campur", 18000, "c2"),
-            Product("p62", "Es Cendol", 15000, "c2"),
-            Product("p63", "Es Kelapa Muda", 18000, "c2"),
-            Product("p64", "Es Kopi Susu", 22000, "c2"),
-            Product("p65", "Americano", 20000, "c2"),
-            Product("p66", "Cappuccino", 25000, "c2"),
-            Product("p67", "Cafe Latte", 25000, "c2"),
-            Product("p68", "Mocha", 28000, "c2"),
-            Product("p69", "Chocolate", 22000, "c2"),
-            Product("p70", "Matcha Latte", 28000, "c2"),
-
-            Product("p71", "Kentang Goreng", 18000, "c3"),
-            Product("p72", "Singkong Goreng", 15000, "c3"),
-            Product("p73", "Pisang Goreng", 16000, "c3"),
-            Product("p74", "Tahu Crispy", 14000, "c3"),
-            Product("p75", "Tempe Mendoan", 15000, "c3"),
-            Product("p76", "Cireng", 12000, "c3"),
-            Product("p77", "Cilok", 10000, "c3"),
-            Product("p78", "Batagor", 18000, "c3"),
-            Product("p79", "Siomay", 22000, "c3"),
-            Product("p80", "Otak-Otak", 18000, "c3"),
-            Product("p81", "Roti Bakar Coklat", 18000, "c3"),
-            Product("p82", "Roti Bakar Keju", 18000, "c3"),
-            Product("p83", "Roti Bakar Coklat Keju", 22000, "c3"),
-            Product("p84", "Pisang Bakar", 18000, "c3"),
-            Product("p85", "Sosis Bakar", 15000, "c3"),
-
-            Product("p86", "Pudding Coklat", 12000, "c4"),
-            Product("p87", "Pudding Vanilla", 12000, "c4"),
-            Product("p88", "Ice Cream Vanilla", 15000, "c4"),
-            Product("p89", "Ice Cream Chocolate", 15000, "c4"),
-            Product("p90", "Ice Cream Strawberry", 15000, "c4"),
-            Product("p91", "Brownies", 18000, "c4"),
-            Product("p92", "Cheesecake", 28000, "c4"),
-            Product("p93", "Tiramisu", 30000, "c4"),
-            Product("p94", "Donat Coklat", 10000, "c4"),
-            Product("p95", "Donat Keju", 10000, "c4"),
-            Product("p96", "Donat Glaze", 10000, "c4"),
-            Product("p97", "Klepon", 12000, "c4"),
-            Product("p98", "Lapis Legit", 25000, "c4"),
-            Product("p99", "Kue Cubit", 15000, "c4"),
-            Product("p100", "Martabak Mini", 18000, "c4"),
-        )
-
-        _uiState.update {
-            it.copy(
-                categories = listOf(catMakanan, catMinuman, catCemilan, catDessert),
-                products = dummyProducts
-            )
+    private fun observeDatabase() {
+        viewModelScope.launch {
+            repository.getCategoriesStream().collect { categoriesList ->
+                _uiState.update { it.copy(categories = categoriesList) }
+                if (categoriesList.isEmpty()) seedInitialDummyData()
+            }
         }
+
+        viewModelScope.launch {
+            repository.getProductsStream().collect { productsList ->
+                _uiState.update { it.copy(products = productsList) }
+            }
+        }
+    }
+
+    // =====================================================================
+    // THE REAL DEAL: LOGIKA PRINT & PEMBUATAN STRUK
+    // =====================================================================
+
+    /**
+     * @param cart List barang yang ingin dicetak (Bisa keranjang aktif, bisa data riwayat)
+     */
+    fun printCurrentOrder(
+        context: Context,
+        cart: List<OrderItem>,
+        timestamp: Long = System.currentTimeMillis()
+    ) {
+        if (cart.isEmpty() || _uiState.value.isPrinting) return
+
+        _uiState.update { it.copy(isPrinting = true) }
+
+        // MENGIRIM DATA BLUETOOTH WAJIB DI IO THREAD AGAR UI TIDAK FREEZE!
+        viewModelScope.launch(Dispatchers.IO) {
+            val receiptContent = generateEscPosReceipt(cart, timestamp)
+            val printResult = ThermalPrinterHelper.printReceiptWithLogo(context, receiptContent)
+
+            printResult.onSuccess {
+                // Jika sukses keluar kertas, otomatis kosongkan keranjang belanja di layar utama!
+                _uiState.update { it.copy(cart = emptyList(), isPrinting = false) }
+            }.onFailure { error ->
+                // Lompat kembali ke UI Thread untuk menampilkan Toast
+                withContext(Dispatchers.Main) {
+                    Toast.makeText(
+                        context,
+                        "Printer Error: ${error.message ?: "Periksa koneksi Bluetooth"}",
+                        Toast.LENGTH_LONG
+                    ).show()
+                }
+                _uiState.update { it.copy(isPrinting = false) }
+            }
+        }
+    }
+
+    /**
+     * Merakit string biner struk format 58mm (Maksimal 32 Karakter per baris)
+     */
+    private fun generateEscPosReceipt(cart: List<OrderItem>, timestamp: Long): String {
+        val sb = StringBuilder()
+
+        val dateObj = Date(timestamp)
+        val localeID = Locale("id", "ID")
+
+        val dateOnlyStr = SimpleDateFormat("dd/MM/yyyy", localeID).format(dateObj) // Output: "29/06/2026"
+        val timeOnlyStr = SimpleDateFormat("HH:mm", localeID).format(dateObj)     // Output: "23:16"
+
+        // 1. Header Toko (Logo di atasnya sudah di-handle otomatis oleh ThermalPrinterHelper)
+        sb.append("[C]<b>SOTO BETAWI & WARKOP MPOK NOER</b>\n")
+        sb.append("[C]Jl. Raya Bojong Gede\n")
+        sb.append("[C]Bogor, Jawa Barat\n")
+        sb.append("[L]\n")
+        sb.append("[L]$dateOnlyStr[R]Waktu: $timeOnlyStr\n")
+        sb.append("[C]================================\n")
+
+        var totalBelanja = 0L
+
+        // 2. Looping Item Pesanan
+        cart.forEach { item ->
+            val name = item.product.name
+            val qty = item.quantity
+            val priceStr = item.product.price.formatIDR()
+            val subtotalStr = item.subtotal.formatIDR()
+            totalBelanja += item.subtotal
+
+            // Trik Standar Struk 58mm:
+            // Baris 1: Nama Menu (Biarkan memanjang ke bawah jika namanya panjang)
+            sb.append("[L]$name\n")
+            // Baris 2: [Rata Kiri] Qty x Harga  ----------  [Rata Kanan] Subtotal
+            sb.append("[L]  $qty x $priceStr[R]$subtotalStr\n")
+        }
+
+        // 3. Footer Kalkulasi
+        sb.append("[C]--------------------------------\n")
+        sb.append("[L]<b>TOTAL</b>[R]<b>Rp ${totalBelanja.formatIDR()}</b>\n")
+        sb.append("[C]================================\n")
+        sb.append("[C]Dibuat Dengan Cinta,\n")
+        sb.append("[C]Rasanya Sampai ke Hati!\n")
+
+        return sb.toString()
+    }
+
+    // =====================================================================
+    // LOGIKA CRUD & CART LAINNYA
+    // =====================================================================
+
+    fun addNewCategory(name: String) {
+        viewModelScope.launch {
+            val uniqueId = "c_${System.currentTimeMillis()}"
+            repository.insertCategory(Category(id = uniqueId, name = name))
+        }
+    }
+
+    fun deleteCategory(category: Category) {
+        viewModelScope.launch {
+            repository.deleteCategory(category)
+            if (_uiState.value.selectedCategoryId == category.id) selectCategory(null)
+        }
+    }
+
+    fun saveProduct(id: String?, name: String, price: Long, categoryId: String, imageUrl: String) {
+        viewModelScope.launch {
+            val finalId = id ?: "p_${System.currentTimeMillis()}"
+            repository.insertProduct(Product(finalId, name, price, categoryId, imageUrl))
+        }
+    }
+
+    fun deleteProduct(product: Product) {
+        viewModelScope.launch { repository.deleteProduct(product) }
     }
 
     fun selectCategory(categoryId: String?) {
@@ -146,16 +167,12 @@ class OrderViewModel : ViewModel() {
         _uiState.update { state ->
             val mutableCart = state.cart.toMutableList()
             val existingIndex = mutableCart.indexOfFirst { it.product.id == product.id }
-
             if (existingIndex != -1) {
-                // Jika barang sudah ada di summary kanan, tambah Qty +1
                 val item = mutableCart[existingIndex]
                 mutableCart[existingIndex] = item.copy(quantity = item.quantity + 1)
             } else {
-                // Jika belum ada, masukkan barang baru dengan Qty 1
                 mutableCart.add(OrderItem(product = product, quantity = 1))
             }
-
             state.copy(cart = mutableCart)
         }
     }
@@ -164,22 +181,32 @@ class OrderViewModel : ViewModel() {
         _uiState.update { state ->
             val mutableCart = state.cart.toMutableList()
             val existingIndex = mutableCart.indexOfFirst { it.product.id == product.id }
-
             if (existingIndex != -1) {
                 val item = mutableCart[existingIndex]
                 if (item.quantity > 1) {
                     mutableCart[existingIndex] = item.copy(quantity = item.quantity - 1)
                 } else {
-                    mutableCart.removeAt(existingIndex) // Kalau Qty sisa 1 dikurangi, hapus dari list
+                    mutableCart.removeAt(existingIndex)
                 }
             }
-
             state.copy(cart = mutableCart)
         }
     }
 
-    fun printCurrentOrder(context: Context) {
-        // Nanti panggil ThermalPrinterHelper kamu di sini mengirimkan data state.cart!
-        println("Mencetak pesanan sejumlah: ${_uiState.value.cart.size} item")
+    private suspend fun seedInitialDummyData() {
+        val catMakanan = Category("c1", "Makanan")
+        val catMinuman = Category("c2", "Minuman")
+        repository.insertCategory(catMakanan)
+        repository.insertCategory(catMinuman)
+
+        listOf(
+            Product("p1", "Soto Betawi Daging", 35000, "c1", ""),
+            Product("p4", "Es Teh Manis", 5000, "c2", ""),
+        ).forEach { repository.insertProduct(it) }
+    }
+
+    // Helper pemercantik angka mata uang (35000 -> "35.000")
+    private fun Long.formatIDR(): String {
+        return NumberFormat.getNumberInstance(Locale("id", "ID")).format(this)
     }
 }

@@ -8,31 +8,24 @@ import com.abduladf.satukasir.features.home.HomeScreen
 import com.abduladf.satukasir.features.order.OrderScreen
 import com.abduladf.satukasir.features.sandbox.SandboxScreen
 import com.abduladf.satukasir.features.settings.menuEditor.MenuEditorScreen
+import com.abduladf.satukasir.utils.PrinterStatus
 
 @Composable
 fun AppNavigation(
-    navController: NavHostController
+    navController: NavHostController,
+    printerStatus: PrinterStatus
 ) {
 
     NavHost(
         navController = navController,
-        startDestination = AppDestination.Home.route
+        startDestination = AppDestination.Order.route,
     ) {
-
-        composable(AppDestination.Home.route) {
-            HomeScreen()
-        }
-
         composable(AppDestination.Order.route) {
-            OrderScreen()
+            OrderScreen(printerStatus = printerStatus)
         }
 
         composable(AppDestination.MenuEditor.route) {
             MenuEditorScreen()
-        }
-
-        composable(AppDestination.Sandbox.route) {
-            SandboxScreen()
         }
     }
 }

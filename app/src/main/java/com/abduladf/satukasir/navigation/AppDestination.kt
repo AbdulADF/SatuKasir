@@ -12,13 +12,6 @@ sealed class AppDestination(
     val title: String,
     val icon: ImageVector
 ) {
-
-    object Home : AppDestination(
-        "home",
-        "Home",
-        Icons.Default.Home
-    )
-
     object Order : AppDestination(
         "order",
         "Order Baru",
@@ -28,18 +21,6 @@ sealed class AppDestination(
     object MenuEditor : AppDestination(
         "menuEditor",
         "Menu Editor",
-        Icons.AutoMirrored.Filled.List
-    )
-
-    object Sandbox: AppDestination(
-        "sandbox",
-        "Sandbox",
-        Icons.Default.Star
-    )
-
-    object Settings : AppDestination(
-        "settings",
-        "Settings",
         Icons.AutoMirrored.Filled.List
     )
 }

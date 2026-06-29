@@ -48,13 +48,20 @@ fun SatuKasirApp() {
 
     LaunchedEffect(Unit) {
         while (true) {
-            withContext(Dispatchers.IO) {
-                val currentStatus = ThermalPrinterHelper.checkPrinterConnection()
-                withContext(Dispatchers.Main) {
-                    printerStatus = currentStatus
-                }
+            val currentStatus = withContext(Dispatchers.IO) {
+                ThermalPrinterHelper.checkPrinterConnection()
             }
-            delay(30000) // Cek ulang setiap 30 detik sekali
+
+            printerStatus = currentStatus
+
+            val delayMillis = when (currentStatus) {
+                PrinterStatus.Connected -> 60_000L      // 1 menit
+                PrinterStatus.Disconnected,
+                PrinterStatus.Checking,
+                is PrinterStatus.Error -> 10_000L       // 10 detik
+            }
+
+            delay(delayMillis)
         }
     }
 
@@ -127,7 +134,7 @@ fun SatuKasirApp() {
                 }
             }
         ) {
-            AppNavigation(navController)
+            AppNavigation(navController, printerStatus = printerStatus)
         }
     }
 

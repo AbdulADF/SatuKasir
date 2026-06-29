@@ -1,6 +1,7 @@
 package com.abduladf.satukasir.features.order
 
 import androidx.compose.foundation.clickable
+import androidx.compose.foundation.combinedClickable
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.LazyRow
@@ -15,6 +16,7 @@ import androidx.compose.material3.*
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.remember
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
@@ -24,18 +26,31 @@ import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.lifecycle.viewmodel.compose.viewModel
+import com.abduladf.satukasir.data.local.database.AppDatabase
+import com.abduladf.satukasir.data.repository.OrderRepository
 import com.abduladf.satukasir.domain.model.Category
 import com.abduladf.satukasir.domain.model.OrderItem
 import com.abduladf.satukasir.domain.model.Product
+import com.abduladf.satukasir.utils.PrinterStatus
 import java.text.NumberFormat
 import java.util.Locale
 
 @Composable
 fun OrderScreen(
-    viewModel: OrderViewModel = viewModel()
+    printerStatus: PrinterStatus
 ) {
-    val uiState by viewModel.uiState.collectAsState()
     val context = LocalContext.current
+
+    val isPrinterReady = printerStatus is PrinterStatus.Connected || printerStatus is PrinterStatus.Checking
+
+    val viewModel: OrderViewModel = viewModel(
+        factory = remember {
+            val database = AppDatabase.getDatabase(context)
+            val repository = OrderRepository(database.categoryDao(), database.productDao())
+            OrderViewModelFactory(repository)
+        }
+    )
+    val uiState by viewModel.uiState.collectAsState()
 
     Row(modifier = Modifier.fillMaxSize()) {
 
@@ -122,20 +137,44 @@ fun OrderScreen(
             Spacer(modifier = Modifier.height(16.dp))
 
             Button(
-                onClick = { viewModel.printCurrentOrder(context) },
+                onClick = { viewModel.printCurrentOrder(context, uiState.cart) },
                 modifier = Modifier.fillMaxWidth().height(50.dp),
-                enabled = uiState.cart.isNotEmpty()
+                enabled = uiState.cart.isNotEmpty() && !uiState.isPrinting && isPrinterReady
             ) {
-                Text("Cetak Struk (Print)", fontSize = 16.sp, fontWeight = FontWeight.Bold)
+                if (uiState.isPrinting) {
+                    CircularProgressIndicator(
+                        modifier = Modifier.size(24.dp),
+                        color = MaterialTheme.colorScheme.onPrimary,
+                        strokeWidth = 2.dp
+                    )
+                    Spacer(modifier = Modifier.width(8.dp))
+                    Text("Mencetak...", fontSize = 16.sp, fontWeight = FontWeight.Bold)
+                } else {
+                    // Teks dinamis sesuai status dari SatuKasirApp!
+                    Text(
+                        text = if (!isPrinterReady) "Printer Terputus" else "Cetak Struk",
+                        fontSize = 16.sp,
+                        fontWeight = FontWeight.Bold
+                    )
+                }
             }
         }
     }
 }
 
 @Composable
-fun ProductCardItem(product: Product, onClick: () -> Unit) {
+fun ProductCardItem(
+    product: Product,
+    onClick: () -> Unit,
+    onLongClick: (() -> Unit)? = null
+) {
     Card(
-        modifier = Modifier.height(110.dp).clickable { onClick() },
+        modifier = Modifier
+            .height(110.dp)
+            .combinedClickable(
+                onClick = onClick,
+                onLongClick = { onLongClick?.invoke() }
+            ),
         elevation = CardDefaults.cardElevation(defaultElevation = 2.dp),
         colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surfaceVariant)
     ) {

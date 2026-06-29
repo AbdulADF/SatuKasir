@@ -8,7 +8,8 @@ data class OrderUiState(
     val categories: List<Category> = emptyList(),
     val products: List<Product> = emptyList(),
     val selectedCategoryId: String? = null, // null artinya "Semua Kategori"
-    val cart: List<OrderItem> = emptyList()
+    val cart: List<OrderItem> = emptyList(),
+    val isPrinting: Boolean = false,
 ) {
     val displayedProducts: List<Product>
         get() = if (selectedCategoryId == null) {
